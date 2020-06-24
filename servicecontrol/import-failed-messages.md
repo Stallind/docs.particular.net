@@ -12,9 +12,9 @@ Messages can fail to be imported into the ServiceControl database due to the fol
  * Messages themselves are malformed (e.g., missing headers).
    * This happens e.g., when an outdated version of NServiceBus that contained a bug was used to process the messages.
  * Messages are well-formed, but there was an intermittent database problem lasting long enough that the built-in retries did not resolve the problem.
- * [Forwarding](/servicecontrol/errorlog-auditlog-behavior.md) is enabled, and the destination queue does not exist, or ServiceControl cannot send messages to it. For example, when the message or size limit has been reached.
+ * [Forwarding](/servicecontrol/errorlog-auditlog-behavior.md) is enabled, and the destination queue does not exist, or ServiceControl cannot send messages to it. This could happen when the message or size limit has been reached or storage resources are exhausted.
 
-NOTE: Messages that have corrupt (i.e. unreadable, not deserializable) header data will fail to be process at all and be moved to the 'error' queue (by default `particular.servicecontrol.error` or `particular.servicecontrol.audit.error`)
+NOTE: Messages that have corrupt (i.e. unreadable, not deserializable) header data will fail to be processed at all and will be moved to ServiceControl's 'error' queue.
 
 Messages that fail to be imported are stored in the ServiceControl database in the `FailedAuditImports` and `FailedErrorImports` collections.
 
@@ -22,33 +22,31 @@ In addition, a log with the failure reason is written for the message in the [`%
 
 ## Failed message custom check
 
-When a message that has failed the import is detected in the ServiceControl database, the [**Message Ingestion** custom check](/servicecontrol/servicecontrol-instances/#self-monitoring-via-custom-checks-failed-imports) is marked as failed to bring the failed import(s) to the administrator's attention.
+When a failed import is detected in the ServiceControl database, the [**Message Ingestion** custom check](/servicecontrol/servicecontrol-instances/#self-monitoring-via-custom-checks-failed-imports) is marked as failed to bring the failed import(s) to the administrator's attention.
 
 ## How to reimport
 
-To reimport the failed messages, the instance to be shut down and started from a command line
+To reimport the failed messages, the instance must be shut down and started from a command line using one of the following commands:
 
 NOTE: The value to use for `--serviceName` is equal to the instance name. It also is available in the Windows Service information
 
-ServiceControl instance:
+**ServiceControl instance:**
 
-Using the additional argument `--import-failed-errors`.
 
 ```cmd
 ServiceControl.exe --serviceName=Particular.Servicecontrol --import-failed-errors
 ```
 
-ServiceControl audit instance:
+**ServiceControl audit instance:**
 
-Using the additional argument `--import-failed-audits`
 
 ```cmd
 ServiceControl.Audit.exe --serviceName=Particular.Servicecontrol.Audit --import-failed-audits
 ```
 
-While in import mode, ServiceControl or ServiceControl Audit will not be processing its input queues. Once the imported failure message is re-processed successfully, the message will be available in ServicePulse and ServiceInsight.
+While in import mode, ServiceControl or ServiceControl Audit will not be processing its input queues. Once the message is re-processed successfully, it will be available in ServicePulse and ServiceInsight. ServiceControl or ServiceControl Audit instance can then be started normally again.
 
-The custom check will disappear if no failed imports remain.
+The custom check will no longer be displayed if all failed imports have been successfully reimported
 
 ## Modify message data 
 
